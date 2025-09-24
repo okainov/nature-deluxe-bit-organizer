@@ -1,10 +1,13 @@
-# 🦌 Nature Deluxe Board Game Organizer
+# 🦌 Nature Big Box Deluxe Board Game Organizer
 
-A complete 3D-printed organizer system for the **Nature Big Box** Kickstarter edition, designed to transform your gaming experience from chaotic setup to streamlined play.
+<div align="center">
+  <img src=".github/images/animation.gif" alt="Nature Big Box Deluxe Organizer Animation" width="800"/>
+</div>
 
-![Nature Deluxe](https://img.shields.io/badge/Game-Nature%20Deluxe-green?style=for-the-badge)
+A complete 3D-printed organizer system for the **Nature Big Box Deluxe** Kickstarter edition, designed to transform your gaming experience from chaotic setup to streamlined play.
+
+![Nature Big Box Deluxe](https://img.shields.io/badge/Game-Nature%20%20Big%20Box%20Deluxe-green?style=for-the-badge)
 ![3D Printing](https://img.shields.io/badge/3D%20Printing-OpenSCAD-blue?style=for-the-badge)
-![Printer Compatible](https://img.shields.io/badge/Printer-A1%20Mini%20Compatible-orange?style=for-the-badge)
 
 ## 🎯 Overview
 
