@@ -54,8 +54,12 @@ This organizer leverages the incredible [**Boardgame Insert Toolkit**](https://g
 - **📐 Print Plates**: 16 total plates
 - **🖨️ Printer**: Optimized for Bambu A1 Mini (largest piece is exactly 18cm width)
 - **📏 Largest Component**: Core game box at 18×14×4cm
-- **⏱️ Print Time**: Varies by component (detailed timing coming soon)
-- **🧵 Material**: PLA recommended for durability
+- **⏱️ Print Time**: in my A1 mini it was around 1hr for smaller boxes or lids and around 2-3 hours for each expansion box.
+- **⚖️ Filament Consumption**: 
+  - Small boxes (token organizers): ~50g each
+  - Large expansion boxes: ~100g each
+  - **💡 Pro Tip**: Use **Lightning** infill (I used 15%) to save filament, and it's still strong enough for its purpose
+- **🧵 Material**: I printed with Bambu PLA of different varieties
 
 ## 📁 Files Structure
 
@@ -74,13 +78,13 @@ This organizer leverages the incredible [**Boardgame Insert Toolkit**](https://g
 
 1. **Download** the STL files for the components you need
 2. **Slice** using your preferred slicer (optimized for A1 Mini)
-3. **Print** each component (PLA recommended)
+3. **Print** each component
 4. **Organize** your Nature Big Box components
 5. **Enjoy** lightning-fast game setup!
 
 ## 🎮 Setup Experience
 
-Before: *"Where is the Tundra water hole? Are those the right predator tokens? Let me check three different boxes..."*
+Before: *"Where is the Tundra dice hole? Are those the right predator tokens? Let me check three different boxes..."*
 
 After: *"Tundra module tonight? Perfect, grab the blue box and we're ready to play!"*
 
