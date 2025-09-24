@@ -6,13 +6,13 @@ include <boardgame_insert_toolkit_lib.3.scad>;
 include <bit_functions_lib.3.scad>;
 
 // Determines whether lids are output.
-g_b_print_lid = false;
+g_b_print_lid = true;
 
 // Determines whether boxes are output.
 g_b_print_box = true;
 
 // Only render specified box
-g_isolated_print_box = "core";
+g_isolated_print_box = "all";
 
 // Used to visualize how all of the boxes fit together. 
 g_b_visualization = false;
@@ -67,21 +67,23 @@ depth_reg_deep = 15.0 + tolerance_gap;
 // ---- Derived layout (don’t change unless you want a different packing) ----
 // Column widths (interior)
 colL_w = nest_diam;
-colM_w = max(reg_w, big_w);
+colM_w = big_w;
 
 // Row heights (interior)
-rowTop_h = max(nest_diam, reg_h); // top row must fit round pocket & reg deck
-rowBottom_h = max(nest_diam, big_h); // bottom row must fit round pocket & big deck
+rowTop_h = reg_h; // top row must fit round pocket & reg deck
+rowBottom_h = big_h; // bottom row must fit round pocket & big deck
 
 // Exterior box size
-box_x = (2 * g_wall_thickness) + colL_w + gap_between_columns_mm + colM_w + gap_between_columns_mm + 9;
+box_x = 170;
+box_y = 145;
+box_z = 30.0;
 
-box_y = (2 * g_wall_thickness) + nest_diam * 2 + gap_between_rows_mm + 0;
-
-box_z = 30.0; // overall box height
+// Initial calculations which led to 17*14.5 size. Also 14.5 because original box is 30 cm, and we want to fit two boxes in that space, thus 14.5*2=29cm and 1cm for tolerance
+//box_x = (2 * wall) + colL_w + gap_between_columns_mm + colM_w + gap_between_columns_mm + 9;
+//box_y = (2 * wall) + nest_diam * 2 + gap_between_rows_mm + 0;
 
 // Helper: lower-left origins of each grid cell (interior coords)
-llx_L = g_wall_thickness;
+llx_L = wall;
 llx_M = llx_L + colL_w + gap_between_columns_mm;
 llx_R = llx_M + colM_w + gap_between_columns_mm;
 
@@ -95,20 +97,80 @@ natural_disaster_center = 85;
 comet_box_x = 30;
 comet_box_y = 50;
 comet_box_z = 18;
-tundra_watering_hole_height = 2.0;
-rainforest_watering_hole_height = 2.0;
-base_watering_hole_height = 2.0;
+
+watering_hole_height = 2.0;
 
 small_box_x = 120.0;
 small_box_y = 70.0;
 
+// Core decks are bigger than modules
 core_nature_deck_height = 30 + tolerance_gap;
 core_hunter_deck_height = 7 + tolerance_gap;
 core_player_aids_height = 4 + tolerance_gap;
 core_center_of_aids_solo = 145;
 
+// Change to adjust the proportion between frogs/bananas compartments
 frogs_bananas_difference = 15;
 base_frog_bananas_comp_size = (small_box_x - wall * 2 - gap_between_rows_mm) / 2;
+
+function player_aids(x, y, depth = depth_player_aids, cutouts = [f, f, f, f]) =
+  [
+    BOX_COMPONENT,
+    [
+      [CMP_SHAPE, SQUARE],
+      [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
+      [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, depth]],
+      [POSITION_XY, [x, y]],
+      [CMP_SHAPE_VERTICAL_B, t],
+      [CMP_CUTOUT_SIDES_4B, cutouts],
+    ],
+  ];
+function solo_cards(x, y, depth = depth_solo_cards, rotation = 0, cutouts = [f, f, t, t]) =
+  [
+    BOX_COMPONENT,
+    [
+      [CMP_SHAPE, SQUARE],
+      [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
+      [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth]],
+      [POSITION_XY, [x, y]],
+      [CMP_SHAPE_VERTICAL_B, t],
+      [CMP_CUTOUT_SIDES_4B, cutouts],
+      [ROTATION, rotation],
+    ],
+  ];
+
+// As solo cards and nature cards are the same size, this is just a syntax sugar  
+function nature_cards(x, y, depth = depth_reg_deep, rotation = 0, cutouts = [f, f, f, f]) =
+  solo_cards(x, y, depth, rotation, cutouts);
+
+function round_compartment(x, y, diam, depth = 20.0, cutouts = [f, f, f, f]) =
+  [
+    BOX_COMPONENT,
+    [
+      [CMP_SHAPE, ROUND],
+      [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
+      [CMP_COMPARTMENT_SIZE_XYZ, [diam, diam, depth]],
+      [POSITION_XY, [x, y]],
+      [CMP_SHAPE_VERTICAL_B, t],
+      [CMP_CUTOUT_SIDES_4B, cutouts],
+    ],
+  ];
+
+function make_lid(label_text) =
+  [
+    BOX_LID,
+    [
+      [LID_SOLID_B, f],
+      [
+        LABEL,
+        [
+          [LBL_TEXT, label_text],
+          [LBL_SIZE, AUTO],
+          [LBL_PLACEMENT, CENTER],
+        ],
+      ],
+    ],
+  ];
 
 data = [
   [
@@ -116,80 +178,18 @@ data = [
     [
       [BOX_SIZE_XYZ, [box_x, box_y, box_z]],
 
-      // LEFT column: two slots for nest tokens
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, ROUND],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [nest_diam, nest_diam, 25.0]],
-          [POSITION_XY, [-5, lly_T]],
-          [CMP_CUTOUT_SIDES_4B, finger_cutout_on_front_4b],
-        ],
-      ],
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, ROUND],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [nest_diam, nest_diam, 25.0]],
-          [POSITION_XY, [-5, 0]],
-          [CMP_CUTOUT_SIDES_4B, finger_cutout_on_front_4b],
-        ],
-      ],
+      // Two slots for nest tokens
+      round_compartment(-5, lly_T, nest_diam, depth=25.0, cutouts=finger_cutout_on_front_4b),
+      round_compartment(-5, 0, nest_diam, depth=25.0, cutouts=finger_cutout_on_front_4b),
 
       // SOLO cards on the bottom
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_player_aids + depth_solo_cards + depth_reg_deep]],
-          [POSITION_XY, [center_mid - reg_w / 2 - 10, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, t, t]],
-        ],
-      ],
+      solo_cards(center_mid - reg_w / 2 - 10, box_y / 2 - reg_h / 2, depth=depth_player_aids + depth_solo_cards + depth_reg_deep),
       // Full deck then (rotated)
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_player_aids + depth_reg_deep]],
-          [POSITION_XY, [center_mid - reg_h / 2, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [ROTATION, 90],
-        ],
-      ],
+      nature_cards(center_mid - reg_w / 2 - 10, box_y / 2 - reg_h / 2, depth=depth_player_aids + depth_reg_deep, rotation=90),
       // Player aids on top
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, depth_player_aids]],
-          [POSITION_XY, [center_mid - big_w / 2 - 10, box_y / 2 - big_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-        ],
-      ],
+      player_aids(center_mid - big_w / 2 - 10, box_y / 2 - big_h / 2),
 
-      [
-        BOX_LID,
-        [
-          [LID_SOLID_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "FLIGHT"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
+      make_lid(label_text="FLIGHT"),
     ],
   ],
 
@@ -199,70 +199,18 @@ data = [
       [BOX_SIZE_XYZ, [box_x, box_y, box_z]],
 
       // Big dice
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, ROUND],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [dice_diam, dice_diam, 28.0]],
-          [POSITION_XY, [wall, box_y - dice_diam - wall * 2]],
-          [CMP_CUTOUT_SIDES_4B, finger_cutout_on_front_4b],
-        ],
-      ],
+      round_compartment(wall, box_y - dice_diam - wall * 2, dice_diam, depth=28.0, cutouts=finger_cutout_on_front_4b),
 
       // Full deck
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_reg_deep + tundra_watering_hole_height]],
-          [POSITION_XY, [wall, wall]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [t, f, f, f]],
-        ],
-      ],
+      nature_cards(wall, wall, depth=depth_reg_deep + watering_hole_height, cutouts=[t, f, f, f]),
 
       // SOLO cards on the bottom
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_player_aids + depth_solo_cards + tundra_watering_hole_height]],
-          [POSITION_XY, [tundra_center_of_aids_solo - reg_w / 2 - 10, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-        ],
-      ],
+      solo_cards(tundra_center_of_aids_solo - reg_w / 2 - 10, box_y / 2 - reg_h / 2, depth=depth_player_aids + depth_solo_cards + watering_hole_height, cutouts=[f, f, f, f]),
 
       // Player aids on top
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, depth_player_aids + tundra_watering_hole_height]],
-          [POSITION_XY, [tundra_center_of_aids_solo - big_w / 2 - 10, box_y / 2 - big_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, f, t]],
-        ],
-      ],
+      player_aids(tundra_center_of_aids_solo - big_w / 2 - 10, box_y / 2 - big_h / 2, depth=depth_player_aids + watering_hole_height, cutouts=[f, f, f, t]),
 
-      [
-        BOX_LID,
-        [
-          [LID_SOLID_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "TUNDRA"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
+      make_lid(label_text="TUNDRA"),
     ],
   ],
 
@@ -273,84 +221,17 @@ data = [
       [BOX_SIZE_XYZ, [box_x, box_y, box_z]],
 
       // Big dice
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, ROUND],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [dice_diam, dice_diam, 28.0]],
-          [POSITION_XY, [wall, box_y - dice_diam - wall * 2]],
-          [CMP_CUTOUT_SIDES_4B, finger_cutout_on_front_4b],
-        ],
-      ],
+      round_compartment(wall, box_y - dice_diam - wall * 2, dice_diam, depth=28.0, cutouts=finger_cutout_on_front_4b),
 
       // Full deck
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_reg_deep]],
-          [POSITION_XY, [wall, wall]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [t, f, f, f]],
-
-          [
-            LABEL,
-            [
-              [
-                LBL_TEXT,
-                "Jurassic",
-              ],
-              [LBL_PLACEMENT, BACK],
-              [LBL_SIZE, 11],
-              [POSITION_XY, [20, 7]],
-              [LBL_FONT, "Times New Roman:style=bold italic"],
-            ],
-          ],
-        ],
-      ],
+      nature_cards(wall, wall, depth=depth_reg_deep, cutouts=[t, f, f, f]),
 
       // SOLO cards on the bottom
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_player_aids + depth_solo_cards]],
-          [POSITION_XY, [tundra_center_of_aids_solo - reg_w / 2 - 10, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-        ],
-      ],
-
+      solo_cards(tundra_center_of_aids_solo - reg_w / 2 - 10, box_y / 2 - reg_h / 2, depth=depth_player_aids + depth_solo_cards, cutouts=[f, f, f, f]),
       // Player aids on top
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, depth_player_aids]],
-          [POSITION_XY, [tundra_center_of_aids_solo - big_w / 2 - 10, box_y / 2 - big_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, f, t]],
-        ],
-      ],
+      player_aids(tundra_center_of_aids_solo - big_w / 2 - 10, box_y / 2 - big_h / 2, depth=depth_player_aids, cutouts=[f, f, f, t]),
 
-      [
-        BOX_LID,
-        [
-          [LID_SOLID_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "JURASSIC"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
+      make_lid(label_text="JURASSIC"),
     ],
   ],
 
@@ -360,96 +241,35 @@ data = [
       [BOX_SIZE_XYZ, [180, 140, 40]],
 
       // Round indicator
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, ROUND],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [round_indicator_dial_diam, round_indicator_dial_diam, 7.0 + core_hunter_deck_height + base_watering_hole_height]],
-          [POSITION_XY, [6, 75]],
-        ],
-      ],
+      round_compartment(
+        6,
+        75,
+        round_indicator_dial_diam,
+        depth=7.0 + core_hunter_deck_height + watering_hole_height
+      ),
+
       // Dial center small hole
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, ROUND],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [9, 9, 2 + 7.0 + core_hunter_deck_height + base_watering_hole_height]],
-          [POSITION_XY, [6 + round_indicator_dial_diam / 2 - 9 / 2, 75 + round_indicator_dial_diam / 2 - 9 / 2]],
-        ],
-      ],
+      // 10 is diameter of the thingy in the middle of the indicator
+      round_compartment(
+        6 + round_indicator_dial_diam / 2 - 10 / 2,
+        75 + round_indicator_dial_diam / 2 - 10 / 2,
+        10,
+        depth=2.0 + 7.0 + core_hunter_deck_height + watering_hole_height
+      ),
 
       // Full deck
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, core_nature_deck_height + base_watering_hole_height]],
-          [POSITION_XY, [wall + 12, -12]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [ROTATION, 90],
-          [CMP_CUTOUT_SIDES_4B, [f, f, t, f]],
-        ],
-      ],
+      nature_cards(wall + 12, -12, depth=core_nature_deck_height + watering_hole_height, rotation=90, cutouts=[f, f, t, f]),
 
-      // Hunter deck
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, core_hunter_deck_height + base_watering_hole_height]],
-          [POSITION_XY, [wall + 12, reg_w - 7]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [ROTATION, 90],
-          [CMP_CUTOUT_SIDES_4B, [f, f, f, t]],
-        ],
-      ],
+      // Hunter cards
+      nature_cards(wall + 12, reg_w - 7, depth=core_hunter_deck_height + watering_hole_height, rotation=90, cutouts=[f, f, f, t]),
 
       // SOLO cards in the middle
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_solo_cards + core_nature_deck_height + base_watering_hole_height]],
-          [POSITION_XY, [50, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, f, t]],
-        ],
-      ],
+      nature_cards(50, box_y / 2 - reg_h / 2, depth=depth_solo_cards + core_nature_deck_height + watering_hole_height, cutouts=[f, f, f, t]),
 
       // Player aids
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, core_player_aids_height + base_watering_hole_height]],
-          [POSITION_XY, [core_center_of_aids_solo - big_w / 2 - 10, box_y / 2 - big_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, f, t]],
-        ],
-      ],
+      player_aids(core_center_of_aids_solo - big_w / 2 - 10, box_y / 2 - big_h / 2, depth=core_player_aids_height + watering_hole_height, cutouts=[f, f, f, t]),
 
-      [
-        BOX_LID,
-        [
-          [LID_SOLID_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "CORE"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
+      make_lid("CORE"),
     ],
   ],
 
@@ -501,43 +321,11 @@ data = [
       ],
 
       // SOLO cards on the bottom
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_reg_deep + depth_solo_cards]],
-          [POSITION_XY, [natural_disaster_center - reg_w / 2 - 10, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-        ],
-      ],
+      nature_cards(natural_disaster_center - reg_w / 2 - 10, box_y / 2 - reg_h / 2, depth=depth_reg_deep + depth_solo_cards),
       // Player aids on top
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, depth_reg_deep]],
-          [POSITION_XY, [natural_disaster_center - big_w / 2 - 10, box_y / 2 - big_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, f, t]],
-        ],
-      ],
+      player_aids(natural_disaster_center - big_w / 2 - 10, box_y / 2 - big_h / 2, depth=depth_reg_deep, cutouts=[f, f, f, t]),
 
-      [
-        BOX_LID,
-        [
-          [LID_SOLID_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "NATURAL DISASTERS"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
+      make_lid("NATURAL DISASTERS"),
     ],
   ],
 
@@ -546,22 +334,6 @@ data = [
     [
       [BOX_SIZE_XYZ, [comet_box_x, comet_box_y, comet_box_z]],
       [BOX_NO_LID_B, t],
-      // without lid actually
-      [
-        BOX_LID,
-        [
-          [ENABLED_B, f],
-          [LID_FIT_UNDER_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "COMET"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
       [
         BOX_COMPONENT,
         [
@@ -570,6 +342,22 @@ data = [
           [CMP_SHAPE, FILLET],
         ],
       ],
+      // without lid actually
+      // [
+      //   BOX_LID,
+      //   [
+      //     [ENABLED_B, f],
+      //     [LID_FIT_UNDER_B, f],
+      //     [
+      //       LABEL,
+      //       [
+      //         [LBL_TEXT, "COMET"],
+      //         [LBL_SIZE, AUTO],
+      //         [LBL_PLACEMENT, CENTER],
+      //       ],
+      //     ],
+      //   ],
+      // ],
     ],
   ],
 
@@ -586,7 +374,7 @@ data = [
           [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
           // As our main box is 14*7, we want to have space for smaller box
           // Extra +2 for lid of the box which should be 70*120*26
-          [CMP_COMPARTMENT_SIZE_XYZ, [70 + 1, 120 + 1, 26 + 2 + rainforest_watering_hole_height]],
+          [CMP_COMPARTMENT_SIZE_XYZ, [70 + 1, 120 + 1, 26 + 2 + watering_hole_height]],
           [POSITION_XY, [wall, wall]],
           [CMP_SHAPE_VERTICAL_B, t],
           [CMP_CUTOUT_SIDES_4B, [t, f, f, f]],
@@ -594,59 +382,13 @@ data = [
       ],
 
       // SOLO cards on the bottom
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_player_aids + depth_solo_cards + depth_reg_deep + rainforest_watering_hole_height]],
-          [POSITION_XY, [rainforest_center_mid - reg_w / 2 - 10, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [CMP_CUTOUT_SIDES_4B, [f, f, t, t]],
-        ],
-      ],
-
+      nature_cards(rainforest_center_mid - reg_w / 2 - 10, box_y / 2 - reg_h / 2, depth=depth_player_aids + depth_solo_cards + depth_reg_deep + watering_hole_height, cutouts=[f, f, t, t]),
       // Full deck then (rotated)
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [reg_w, reg_h, depth_player_aids + depth_reg_deep + rainforest_watering_hole_height]],
-          [POSITION_XY, [rainforest_center_mid - reg_h / 2, box_y / 2 - reg_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          [ROTATION, 90],
-          //[ CMP_CUTOUT_SIDES_4B, [f,f,f,t] ]
-        ],
-      ],
-
+      nature_cards(rainforest_center_mid - reg_h / 2, box_y / 2 - reg_h / 2, depth=depth_player_aids + depth_reg_deep + watering_hole_height, rotation=90),
       // Player aids on top
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_SHAPE, SQUARE],
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [big_w, big_h, depth_player_aids + rainforest_watering_hole_height]],
-          [POSITION_XY, [rainforest_center_mid - big_w / 2 - 10, box_y / 2 - big_h / 2]],
-          [CMP_SHAPE_VERTICAL_B, t],
-          //[ CMP_CUTOUT_SIDES_4B, [f,f,t,t] ]
-        ],
-      ],
+      player_aids(rainforest_center_mid - big_w / 2 - 10, box_y / 2 - big_h / 2, depth=depth_player_aids + watering_hole_height, cutouts=[f, f, f, f]),
 
-      [
-        BOX_LID,
-        [
-          [LID_SOLID_B, f],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "RAINFOREST"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
+      make_lid("RAINFOREST"),
     ],
   ],
   [
@@ -654,25 +396,13 @@ data = [
     [
       [BOX_SIZE_XYZ, [small_box_x, small_box_y, 40.0]],
       [
-        BOX_LID,
-        [
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "MEAT"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
-      [
         BOX_COMPONENT,
         [
           [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
           [CMP_COMPARTMENT_SIZE_XYZ, [small_box_x - 2 * wall, small_box_y - 2 * wall, 38]],
         ],
       ],
+      make_lid("MEAT"),
     ],
   ],
   [
@@ -680,18 +410,19 @@ data = [
     [
       [BOX_SIZE_XYZ, [small_box_x, small_box_y, 40.0]],
       [
-        BOX_LID,
+        BOX_COMPONENT,
         [
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "POPULATION"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
+          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
+          [CMP_COMPARTMENT_SIZE_XYZ, [small_box_x - 2 * wall, small_box_y - 2 * wall, 38]],
         ],
       ],
+      make_lid("POPULATION"),
+    ],
+  ],
+  [
+    "leaves",
+    [
+      [BOX_SIZE_XYZ, [small_box_x, small_box_y, 40.0]],
       [
         BOX_COMPONENT,
         [
@@ -699,8 +430,10 @@ data = [
           [CMP_COMPARTMENT_SIZE_XYZ, [small_box_x - 2 * wall, small_box_y - 2 * wall, 38]],
         ],
       ],
+      make_lid("FOOD"),
     ],
   ],
+
   [
     "bananas and frogs",
     [
@@ -780,34 +513,6 @@ data = [
               [LBL_FONT, "Times New Roman:style=bold italic"],
             ],
           ],
-        ],
-      ],
-    ],
-  ],
-
-  [
-    "leaves",
-    [
-      [BOX_SIZE_XYZ, [small_box_x, small_box_y, 40.0]],
-      [
-        BOX_LID,
-        [
-          [LID_FIT_UNDER_B, t],
-          [
-            LABEL,
-            [
-              [LBL_TEXT, "FOOD"],
-              [LBL_SIZE, AUTO],
-              [LBL_PLACEMENT, CENTER],
-            ],
-          ],
-        ],
-      ],
-      [
-        BOX_COMPONENT,
-        [
-          [CMP_NUM_COMPARTMENTS_XY, [1, 1]],
-          [CMP_COMPARTMENT_SIZE_XYZ, [small_box_x - 2 * wall, small_box_y - 2 * wall, 38]],
         ],
       ],
     ],
